@@ -1,0 +1,93 @@
+import json
+import torch
+from torch.utils.data import DataLoader, Dataset
+from transformers import GPT2Tokenizer, AutoModelForCausalLM, Trainer, TrainingArguments
+from peft import LoraConfig, get_peft_model, TaskType
+
+# -----------------------------
+# Load tokenizer & base model
+# -----------------------------
+model_name = "models/gpt2_local"
+tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+tokenizer.pad_token = tokenizer.eos_token  # GPT2 has no pad token
+
+model = AutoModelForCausalLM.from_pretrained(model_name)
+
+# -----------------------------
+# Apply LoRA
+# -----------------------------
+lora_config = LoraConfig(
+    r=8,                   # Low-rank matrices dimension
+    lora_alpha=16,          # Scaling factor
+    target_modules=["c_attn"],  # GPT2 attention projection layers
+    lora_dropout=0.1,
+    bias="none",
+    task_type=TaskType.CAUSAL_LM
+)
+
+model = get_peft_model(model, lora_config)
+
+# -----------------------------
+# Prepare dataset
+# -----------------------------
+class TwitchDataset(Dataset):
+    def __init__(self, path, tokenizer, block_size=128):
+        self.examples = []
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                data = json.loads(line)
+                text = data["text"].strip()
+                if text:
+                    tokenized = tokenizer(
+                        text,
+                        truncation=True,
+                        max_length=block_size,
+                        padding="max_length",   # <- pad to block_size
+                        return_tensors="pt"
+                    )
+                    self.examples.append(tokenized.input_ids.squeeze(0))
+
+    def __len__(self):
+        return len(self.examples)
+
+    def __getitem__(self, idx):
+        return {"input_ids": self.examples[idx], "labels": self.examples[idx]}
+
+train_dataset = TwitchDataset("data/twitch_data.jsonl", tokenizer)
+# Optionally split 80/20 train/test
+train_size = int(0.8 * len(train_dataset))
+test_size = len(train_dataset) - train_size
+train_dataset, test_dataset = torch.utils.data.random_split(train_dataset, [train_size, test_size])
+
+# -----------------------------
+# Training setup
+# -----------------------------
+training_args = TrainingArguments(
+    output_dir="./gpt2_lora",
+    num_train_epochs=3,
+    per_device_train_batch_size=4,
+    gradient_accumulation_steps=8,
+    learning_rate=3e-4,
+    fp16=True,
+    save_strategy="epoch",
+    logging_steps=50,
+    report_to="none"  # disable wandb/other logging
+)
+
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
+    eval_dataset=test_dataset
+)
+
+# -----------------------------
+# Train LoRA adapters
+# -----------------------------
+trainer.train()
+
+# -----------------------------
+# Save LoRA adapters
+# -----------------------------
+model.save_pretrained("./gpt2_lora")
+tokenizer.save_pretrained("./gpt2_lora")

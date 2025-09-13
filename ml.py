@@ -12,11 +12,11 @@ import json
 # # Create the folder if it doesn't exist
 # os.makedirs(save_dir, exist_ok=True)
 
-# # 1️⃣ Download GPT-2 tokenizer and model directly
+# Download GPT-2 tokenizer and model directly
 # tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 # model = GPT2LMHeadModel.from_pretrained("gpt2")
 
-# # 2️⃣ Save them to your clean folder
+# Save them to your clean folder
 # tokenizer.save_pretrained(save_dir)
 # model.save_pretrained(save_dir)
 
