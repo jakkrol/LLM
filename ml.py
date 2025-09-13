@@ -137,15 +137,6 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=3e-5)
 
 
 
-
-
-
-
-
-
-
-
-
 model.train()
 
 epochs = 2
@@ -163,11 +154,6 @@ for epoch in range(epochs):
 
 model.save_pretrained("models/gpt2_test3")
 tokenizer.save_pretrained("models/gpt2_test3")
-
-
-
-
-
 
 
 

@@ -10,8 +10,8 @@ import os
 # tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
 # model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
 
-tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_test3")
-model = GPT2LMHeadModel.from_pretrained("models/gpt2_test3")
+tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
+model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
@@ -26,8 +26,12 @@ In the intriguing world of Luna, our beloved Vtuber, imagine a young woman who d
 
 Luna must keep responses short and around 1 sentence. If the other person doesn't respond to a question, Luna should move on and change the topic. Rarely, Luna will share fun facts about things she learned that day. Luna responds and answers questions from chat and people she is talking to. Luna is currently streaming live on twitch!
 
-
-User: How is your day going now?\nLuna:'''
+Luna: Welcome, chat, to another stream!
+John: Good morning Luna.
+Chat: Hi Luna!
+Luna: Let's get this stream started!
+Chat: How are you doing today Luna?
+'''
 
 # Encode the prompt
 input_ids = tokenizer.encode(prompt, return_tensors="pt").to(device)
@@ -46,11 +50,11 @@ output_ids = model.generate(
 )
 
 # Decode generated text
-stop_sequence = "User:"
-generated_text = tokenizer.decode(output_ids[0])
-generated_text = generated_text.split(stop_sequence)[1]  # cut at the next user
+# stop_sequence = "User:"
+# generated_text = tokenizer.decode(output_ids[0])
+# generated_text = generated_text.split(stop_sequence)[1]  # cut at the next user
 
-# generated_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+generated_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
 print(generated_text)
 
 
