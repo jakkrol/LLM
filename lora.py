@@ -125,7 +125,7 @@ with open("data/Conversation.jsonl", encoding="utf-8") as f:
         data = json.loads(line)
         q = data["question"]
         a = data["answer"]
-        texts.append(f"User: {q}\nLuna: {a}")
+        texts.append(f"User: {q}\nAI: {a}")
 
 # print(f"Loaded {len(texts)} conversation pairs.")
 # print("Sample:", texts[0])

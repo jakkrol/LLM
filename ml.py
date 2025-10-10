@@ -2,172 +2,102 @@ from transformers import GPT2Tokenizer, GPT2Model, GPT2LMHeadModel
 import tiktoken
 import csv
 import torch
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset, Dataset
 import os
 import json
+from torch.optim import AdamW
+from torch.nn.utils.rnn import pad_sequence
 
 
-# save_dir = "models/gpt2_local"
+def collate_fn(batch):
+    input_ids, labels = zip(*batch)
+    input_ids = pad_sequence(input_ids, batch_first=True, padding_value=tokenizer.pad_token_id)
+    labels = pad_sequence(labels, batch_first=True, padding_value=-100)
+    return input_ids, labels
 
-# # Create the folder if it doesn't exist
-# os.makedirs(save_dir, exist_ok=True)
-
-# Download GPT-2 tokenizer and model directly
-# tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-# model = GPT2LMHeadModel.from_pretrained("gpt2")
-
-# Save them to your clean folder
-# tokenizer.save_pretrained(save_dir)
-# model.save_pretrained(save_dir)
-
-# print(f"GPT-2 saved locally in {save_dir}")
-
-
-# tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
-# model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
-
-
-
-# # load data csv
-# twitch_chat_data = ""
-# with open("data/twitch_data.csv", newline='', encoding="utf-8") as csvfile:
-#     reader = csv.DictReader(csvfile)
-#     for row in reader:
-#         if(row["message"]):
-#             twitch_chat_data += row["message"] + "\n"
-
-
-# # enc = tiktoken.get_encoding("gpt2")
-# # twitch_chat_data = enc.encode(twitch_chat_data)
-# twitch_chat_data = tokenizer.encode(twitch_chat_data)
-
-
-# total_length = len(twitch_chat_data)
-# train_data = twitch_chat_data[:int(total_length * 0.8)]
-# test_data = twitch_chat_data[int(total_length * 0.8):]
-
-# train_data = torch.tensor(train_data, dtype=torch.long)
-# test_data = torch.tensor(test_data, dtype=torch.long)
-
-# print(train_data[:10])
-
-
-
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# model.to(device)
-
-
-# block_size = 128
-# def create_blocks(data, block_size):
-#     num_blocks = len(data) // block_size
-#     data = data[:num_blocks * block_size]
-#     data = data.view(num_blocks, block_size)
-#     return data
-
-
-# train_data = create_blocks(train_data, block_size)
-# test_data = create_blocks(test_data, block_size)
-
-
-# batch_size = 4
-
-# train_dataset = TensorDataset(train_data, train_data)
-# train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-
-# optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5)
-
-
-
-
-
-
-
-
-tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_test3")
-model = GPT2LMHeadModel.from_pretrained("models/gpt2_test3")
-
-
-
-texts = []
-with open("data/twitch_data.jsonl", encoding="utf-8") as f:
-    for line in f:
-        data = json.loads(line)
-        texts.append(data["text"].strip())
-
-
-
-full_text = "\n".join(texts)
-twitch_chat_data = tokenizer.encode(full_text, add_special_tokens=False)
-
-
-total_length = len(twitch_chat_data)
-train_data = twitch_chat_data[:int(total_length * 0.8)]
-test_data = twitch_chat_data[int(total_length * 0.8):]
-
-train_data = torch.tensor(train_data, dtype=torch.long)
-test_data = torch.tensor(test_data, dtype=torch.long)
-
-print(train_data[:10])
-
-
+# --- Load base GPT-2 ---
+tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
+model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
+tokenizer.pad_token = tokenizer.eos_token
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
+# --- Prepare data ---
+class ConversationDataset(Dataset):
+    def __init__(self, path, tokenizer, block_size=128):
+        self.samples = []
 
-block_size = 128
-def create_blocks(data, block_size):
-    num_blocks = len(data) // block_size
-    data = data[:num_blocks * block_size]
-    data = data.view(num_blocks, block_size)
-    return data
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                data = json.loads(line)
+                q = data["question"].strip()
+                a = data["answer"].strip()
 
+                # INPUT: User question + AI cue
+                prompt = f"User: {q}\nAI:"
+                # LABELS: AI answer (we add EOS for clarity)
+                target = f" {a}{tokenizer.eos_token}"
 
-train_data = create_blocks(train_data, block_size)
-test_data = create_blocks(test_data, block_size)
+                enc_prompt = tokenizer.encode(prompt, add_special_tokens=False)
+                enc_target = tokenizer.encode(target, add_special_tokens=False)
 
+                input_ids = enc_prompt + enc_target
+                labels = [-100] * len(enc_prompt) + enc_target  # ignore loss for prompt tokens
 
-batch_size = 4
+                if len(input_ids) > block_size:
+                    input_ids = input_ids[:block_size]
+                    labels = labels[:block_size]
 
-train_dataset = TensorDataset(train_data, train_data)
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+                self.samples.append({
+                    "input_ids": torch.tensor(input_ids, dtype=torch.long),
+                    "labels": torch.tensor(labels, dtype=torch.long)
+                })
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=3e-5)
+    def __len__(self):
+        return len(self.samples)
 
+    def __getitem__(self, idx):
+        return self.samples[idx]["input_ids"], self.samples[idx]["labels"]
 
+# --- Create dataset and loader ---
+dataset = ConversationDataset("data/Conversation.jsonl", tokenizer, block_size=128)
+# train_loader = DataLoader(dataset, batch_size=2, shuffle=True)
+train_loader = DataLoader(dataset, batch_size=2, shuffle=True, collate_fn=collate_fn)
 
+# --- Optimizer ---
+optimizer = AdamW(model.parameters(), lr=3e-5, weight_decay=0.01)
 
+# --- Training ---
 model.train()
+epochs = 6
 
-epochs = 2
 for epoch in range(epochs):
-    for batch in train_loader:
-        inputs, labels = [x.to(device) for x in batch]
+    total_loss = 0
+    for inputs, labels in train_loader:
+        inputs, labels = inputs.to(device), labels.to(device)
 
         outputs = model(input_ids=inputs, labels=labels)
         loss = outputs.loss
+
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-    print(f"Epoch: {epoch}, Loss: {loss.item()}")
+        total_loss += loss.item()
 
-model.save_pretrained("models/gpt2_test3")
-tokenizer.save_pretrained("models/gpt2_test3")
+    print(f"Epoch {epoch+1}/{epochs} | Loss: {total_loss / len(train_loader):.4f}")
+
+# --- Save fine-tuned model ---
+model.save_pretrained("models/gpt2_convo6Ep")
+tokenizer.save_pretrained("models/gpt2_convo6Ep")
 
 
 
 
-test_dataset = TensorDataset(test_data, test_data)
-test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
-model.eval()
-total_loss = 0
-with torch.no_grad():
-    for batch in test_loader:
-        inputs, labels = [x.to(device) for x in batch]
-        outputs = model(input_ids=inputs, labels=labels)
-        total_loss += outputs.loss.item()
 
-avg_loss = total_loss / len(test_loader)
-print(f"Test loss: {avg_loss}")
+
+
+
+
