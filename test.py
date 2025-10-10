@@ -10,15 +10,15 @@ import os
 # tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
 # model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
 
-tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_convo2")
-model = GPT2LMHeadModel.from_pretrained("models/gpt2_convo2")
+tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_convo6Ep")
+model = GPT2LMHeadModel.from_pretrained("models/gpt2_convo6Ep")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 model.eval()  # set to evaluation mode
 
 # Example prompt
-prompt = 'User: Hello, who are you?\nAI:'
+prompt = 'User: What are you doing?\nAI:'
 
 # Encode the prompt
 input_ids = tokenizer.encode(prompt, return_tensors="pt").to(device)
@@ -30,7 +30,7 @@ output_ids = model.generate(
     attention_mask=attention_mask,
     max_length=500,
     do_sample=True,
-    temperature=0.3,
+    temperature=0.7,
     top_k=50,
     top_p=0.95,
     pad_token_id=tokenizer.eos_token_id,
