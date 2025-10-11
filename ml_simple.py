@@ -13,12 +13,13 @@ model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
 
 
 texts = []
-with open("data/Conversation.jsonl", encoding="utf-8") as f:
+with open("data/HateSpeech.jsonl", encoding="utf-8") as f:
     for line in f:
         data = json.loads(line)
-        q = data["question"]
-        a = data["answer"]
-        texts.append(f"User: {q}\nAI: {a}")
+        texts.append(data["text"])
+        # q = data["question"]
+        # a = data["answer"]
+        # texts.append(f"User: {q}\nAI: {a}")
 
 
 
@@ -78,8 +79,8 @@ for epoch in range(epochs):
 
     print(f"Epoch: {epoch}, Loss: {loss.item()}")
 
-model.save_pretrained("models/gpt2_convo")
-tokenizer.save_pretrained("models/gpt2_convo")
+model.save_pretrained("models/gpt2_hateSpeech")
+tokenizer.save_pretrained("models/gpt2_hateSpeech")
 
 
 

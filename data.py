@@ -21,24 +21,54 @@
 # print("Path to dataset files:", path)
 
 
+# import kagglehub
 
-import json
+# # Download latest version
+# path = kagglehub.dataset_download("mrmorj/hate-speech-and-offensive-language-dataset")
+
+# print("Path to dataset files:", path)
+
 import csv
+import json
 
-input_csv = "data/Conversation.csv"
-output_jsonl = "data/Conversation.jsonl"
+input_file = "data/hate_speach.csv"
+output_file = "data/HateSpeech.jsonl"
 
-with open(input_csv, newline='', encoding="utf-8") as csvfile, \
-     open(output_jsonl, "w", encoding="utf-8") as jsonlfile:
+with open(input_file, "r", encoding="utf-8", errors="ignore") as infile, \
+     open(output_file, "w", encoding="utf-8") as outfile:
 
-    reader = csv.DictReader(csvfile)
+    reader = csv.reader(infile)
     for row in reader:
-        question = row.get("question", "").strip()
-        answer = row.get("answer", "").strip()
-        if question and answer:  # skip empty messages
-            json_line = {"question": question, "answer": answer}
-            json.dump(json_line, jsonlfile)
-            jsonlfile.write("\n")
+        if len(row) < 7:
+            continue
+
+        try:
+            if int(row[5]) == 0:
+                text = row[6].strip()
+                json_line = {"text": text}
+                outfile.write(json.dumps(json_line, ensure_ascii=False) + "\n")
+        except ValueError:
+            continue
+
+
+
+# import json
+# import csv
+
+# input_csv = "data/Conversation.csv"
+# output_jsonl = "data/Conversation.jsonl"
+
+# with open(input_csv, newline='', encoding="utf-8") as csvfile, \
+#      open(output_jsonl, "w", encoding="utf-8") as jsonlfile:
+
+#     reader = csv.DictReader(csvfile)
+#     for row in reader:
+#         question = row.get("question", "").strip()
+#         answer = row.get("answer", "").strip()
+#         if question and answer:  # skip empty messages
+#             json_line = {"question": question, "answer": answer}
+#             json.dump(json_line, jsonlfile)
+#             jsonlfile.write("\n")
 
 
 
