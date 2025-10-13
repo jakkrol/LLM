@@ -4,8 +4,22 @@ import csv
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 import os
-import json
-import pandas as pd
+
+
+# save_dir = "models/gpt2_local"
+
+# # Create the folder if it doesn't exist
+# os.makedirs(save_dir, exist_ok=True)
+
+# # 1️⃣ Download GPT-2 tokenizer and model directly
+# tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+# model = GPT2LMHeadModel.from_pretrained("gpt2")
+
+# # 2️⃣ Save them to your clean folder
+# tokenizer.save_pretrained(save_dir)
+# model.save_pretrained(save_dir)
+
+# print(f"GPT-2 saved locally in {save_dir}")
 
 
 tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
@@ -13,21 +27,18 @@ model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
 
 
 
-# texts = []
-# with open("data/train_dataset.jsonl", encoding="utf-8") as f:
-#     for line in f:
-#         data = json.loads(line)
-#         texts.append(data["text"])
-#         # q = data["question"]
-#         # a = data["answer"]
-#         # texts.append(f"User: {q}\nAI: {a}")
+# load data csv
+twitch_chat_data = ""
+with open("data/light.csv", newline='', encoding="utf-8") as csvfile:
+    reader = csv.DictReader(csvfile)
+    for row in reader:
+        if(row["message"]):
+            twitch_chat_data += row["message"] + "\n"
 
-df = pd.read_csv("data/twitch_data.csv", usecols=["message"])
 
-texts = df["message"].dropna().astype(str).tolist()
-
-full_text = "\n".join(texts)
-twitch_chat_data = tokenizer.encode(full_text, add_special_tokens=False)
+# enc = tiktoken.get_encoding("gpt2")
+# twitch_chat_data = enc.encode(twitch_chat_data)
+twitch_chat_data = tokenizer.encode(twitch_chat_data)
 
 
 total_length = len(twitch_chat_data)
@@ -62,14 +73,12 @@ batch_size = 4
 train_dataset = TensorDataset(train_data, train_data)
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=3e-5)
-
-
+optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5)
 
 
 model.train()
 
-epochs = 2
+epochs = 1
 for epoch in range(epochs):
     for batch in train_loader:
         inputs, labels = [x.to(device) for x in batch]
@@ -82,22 +91,27 @@ for epoch in range(epochs):
 
     print(f"Epoch: {epoch}, Loss: {loss.item()}")
 
-model.save_pretrained("models/gpt2_testowe1")
-tokenizer.save_pretrained("models/gpt2_testowe1")
+model.save_pretrained("models/gpt2_finetuned")
+tokenizer.save_pretrained("models/gpt2_finetuned")
 
 
 
 
-test_dataset = TensorDataset(test_data, test_data)
-test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
-model.eval()
-total_loss = 0
-with torch.no_grad():
-    for batch in test_loader:
-        inputs, labels = [x.to(device) for x in batch]
-        outputs = model(input_ids=inputs, labels=labels)
-        total_loss += outputs.loss.item()
 
-avg_loss = total_loss / len(test_loader)
-print(f"Test loss: {avg_loss}")
+
+
+
+# test_dataset = TensorDataset(test_data, test_data)
+# test_loader = DataLoader(test_dataset, batch_size=batch_size)
+
+# model.eval()
+# total_loss = 0
+# with torch.no_grad():
+#     for batch in test_loader:
+#         inputs, labels = [x.to(device) for x in batch]
+#         outputs = model(input_ids=inputs, labels=labels)
+#         total_loss += outputs.loss.item()
+
+# avg_loss = total_loss / len(test_loader)
+# print(f"Test loss: {avg_loss}")
