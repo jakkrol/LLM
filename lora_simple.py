@@ -105,8 +105,8 @@ from peft import LoraConfig, get_peft_model, TaskType, PeftModel
 
 # # Load tokenizer
 # tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_convo6EpLora")
-tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_convo6Ep")
-model = GPT2LMHeadModel.from_pretrained("models/gpt2_convo6Ep")
+tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
+model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
 
 
 # -----------------------------
@@ -126,7 +126,7 @@ model = get_peft_model(model, lora_config)
 
 
 texts = []
-with open("data/HateSpeech.jsonl", encoding="utf-8") as f:
+with open("data/twitch_data.jsonl", encoding="utf-8") as f:
     for line in f:
         data = json.loads(line)
         texts.append(data["text"])
@@ -180,7 +180,7 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5)
 
 model.train()
 
-epochs = 10
+epochs = 4
 for epoch in range(epochs):
     for batch in train_loader:
         inputs, labels = [x.to(device) for x in batch]
@@ -193,8 +193,8 @@ for epoch in range(epochs):
 
     print(f"Epoch: {epoch}, Loss: {loss.item()}")
 
-model.save_pretrained("models/gpt2_convoHate")
-tokenizer.save_pretrained("models/gpt2_convoHate")
+model.save_pretrained("models/gpt2_twitchLora")
+tokenizer.save_pretrained("models/gpt2_twitchLora")
 
 
 
