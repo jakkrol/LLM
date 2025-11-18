@@ -14,6 +14,7 @@ venv/
 # Local model directories
 models/
 gpt2_local/
+test_models/
 
 # Data folders
 data/

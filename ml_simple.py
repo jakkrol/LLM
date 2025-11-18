@@ -13,14 +13,14 @@ model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
 
 
 
-# texts = []
-# with open("data/train_dataset.jsonl", encoding="utf-8") as f:
-#     for line in f:
-#         data = json.loads(line)
-#         texts.append(data["text"])
-#         # q = data["question"]
-#         # a = data["answer"]
-#         # texts.append(f"User: {q}\nAI: {a}")
+texts = []
+with open("data/twitch_data.jsonl", encoding="utf-8") as f:
+    for line in f:
+        data = json.loads(line)
+        texts.append(data["text"])
+        # q = data["question"]
+        # a = data["answer"]
+        # texts.append(f"User: {q}\nAI: {a}")
 
 df = pd.read_csv("data/twitch_data.csv", usecols=["message"])
 
@@ -69,7 +69,7 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=3e-5)
 
 model.train()
 
-epochs = 2
+epochs = 4
 for epoch in range(epochs):
     for batch in train_loader:
         inputs, labels = [x.to(device) for x in batch]
@@ -82,8 +82,8 @@ for epoch in range(epochs):
 
     print(f"Epoch: {epoch}, Loss: {loss.item()}")
 
-model.save_pretrained("models/gpt2_testowe1")
-tokenizer.save_pretrained("models/gpt2_testowe1")
+model.save_pretrained("models/gpt2_twitch")
+tokenizer.save_pretrained("models/gpt2_twitch")
 
 
 
