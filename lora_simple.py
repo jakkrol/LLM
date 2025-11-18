@@ -129,7 +129,6 @@ model = get_peft_model(model, lora_config)
 
 texts = []
 with open("data/twitch_data.jsonl", encoding="utf-8") as f:
-with open("data/twitch_data.jsonl", encoding="utf-8") as f:
     for line in f:
         data = json.loads(line)
         texts.append(data["text"])

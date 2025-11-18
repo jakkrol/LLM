@@ -7,7 +7,7 @@ import os
 import json
 from torch.optim import AdamW
 from torch.nn.utils.rnn import pad_sequence
-from peft import LoraConfig, get_peft_model, TaskType
+from peft import LoraConfig, get_peft_model, TaskType, PeftModel
 
 
 def collate_fn(batch):
@@ -17,8 +17,10 @@ def collate_fn(batch):
     return input_ids, labels
 
 # --- Load base GPT-2 ---
-tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_convo6EpLora")
-model = GPT2LMHeadModel.from_pretrained("models/gpt2_convo6EpLora")
+tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
+model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
+# model_A = PeftModel.from_pretrained(model, "models/lora_adapter_A")
+# model_B = PeftModel.from_pretrained(model, "models/lora_adapter_B")
 
 
 # -----------------------------

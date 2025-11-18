@@ -11,7 +11,15 @@ import os
 # model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
 
 tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_convoHate")
-model = GPT2LMHeadModel.from_pretrained("models/gpt2_convoHate")
+model_base = GPT2LMHeadModel.from_pretrained("models/gpt2_convoHate")
+# model_merge = PeftModel.from_pretrained(model_base, "models/lora_adapter_A")
+# model_merge.merge_and_unload()
+# model_merge2 = PeftModel.from_pretrained(model_merge, "models/lora_adapter_B")
+# model_merge2.merge_and_unload()
+
+
+# model = model_merge2;
+model = model_base;
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
