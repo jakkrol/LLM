@@ -107,8 +107,6 @@ from peft import LoraConfig, get_peft_model, TaskType, PeftModel
 # tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_convo6EpLora")
 tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
 model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
-tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
-model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
 
 
 # -----------------------------
