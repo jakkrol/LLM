@@ -10,15 +10,15 @@ import os
 # tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
 # model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
 
-tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_twitchLora")
-model = GPT2LMHeadModel.from_pretrained("models/gpt2_twitchLora")
+tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_convoHate")
+model = GPT2LMHeadModel.from_pretrained("models/gpt2_convoHate")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 model.eval()  # set to evaluation mode
 
 # Example prompt
-prompt = 'Pepe'
+prompt = 'User: Fuck you\nAI:'
 
 # Encode the prompt
 input_ids = tokenizer.encode(prompt, return_tensors="pt").to(device)
@@ -37,7 +37,6 @@ output_ids = model.generate(
     repetition_penalty=1.2
 )
 
-# Decode generated text
 # stop_sequence = "User:"
 # generated_text = tokenizer.decode(output_ids[0])
 # generated_text = generated_text.split(stop_sequence)[1]  # cut at the next user

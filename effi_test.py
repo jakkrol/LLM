@@ -11,22 +11,24 @@ import pandas as pd
 tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
 model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
 
+model = model.to(torch.bfloat16)
+torch.set_num_threads(4)
 
 
-texts = []
-with open("data/twitch_data.jsonl", encoding="utf-8") as f:
-    for line in f:
-        data = json.loads(line)
-        texts.append(data["text"])
-        # q = data["question"]
-        # a = data["answer"]
-        # texts.append(f"User: {q}\nAI: {a}")
+# texts = []
+# with open("data/train_dataset.jsonl", encoding="utf-8") as f:
+#     for line in f:
+#         data = json.loads(line)
+#         texts.append(data["text"])
+#         # q = data["question"]
+#         # a = data["answer"]
+#         # texts.append(f"User: {q}\nAI: {a}")
 
 df = pd.read_csv("data/twitch_data.csv", usecols=["message"])
 
 texts = df["message"].dropna().astype(str).tolist()
 
-full_text = "\n".join(texts)
+full_text = "\n".join(texts[:3000])
 twitch_chat_data = tokenizer.encode(full_text, add_special_tokens=False)
 
 
@@ -45,7 +47,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
 
-block_size = 128
+block_size = 32
 def create_blocks(data, block_size):
     num_blocks = len(data) // block_size
     data = data[:num_blocks * block_size]
@@ -57,7 +59,7 @@ train_data = create_blocks(train_data, block_size)
 test_data = create_blocks(test_data, block_size)
 
 
-batch_size = 4
+batch_size = 1
 
 train_dataset = TensorDataset(train_data, train_data)
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
@@ -69,7 +71,7 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=3e-5)
 
 model.train()
 
-epochs = 4
+epochs = 3
 for epoch in range(epochs):
     for batch in train_loader:
         inputs, labels = [x.to(device) for x in batch]
@@ -82,8 +84,8 @@ for epoch in range(epochs):
 
     print(f"Epoch: {epoch}, Loss: {loss.item()}")
 
-model.save_pretrained("models/gpt2_twitch")
-tokenizer.save_pretrained("models/gpt2_twitch")
+model.save_pretrained("models/gpt2_testowe1")
+tokenizer.save_pretrained("models/gpt2_testowe1")
 
 
 
