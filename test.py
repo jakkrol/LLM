@@ -3,6 +3,7 @@ import tiktoken
 import csv
 import torch
 from torch.utils.data import DataLoader, TensorDataset
+from peft import PeftModel
 import os
 
 
@@ -10,23 +11,27 @@ import os
 # tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
 # model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
 
-tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_convoHate")
-model_base = GPT2LMHeadModel.from_pretrained("models/gpt2_convoHate")
-# model_merge = PeftModel.from_pretrained(model_base, "models/lora_adapter_A")
-# model_merge.merge_and_unload()
+tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
+model_base = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
+model_merge = PeftModel.from_pretrained(model_base, "models/gpt2_hater")
+print(model_merge.print_trainable_parameters())
+model_merge.merge_and_unload()
+print(model_merge.print_trainable_parameters())
+
 # model_merge2 = PeftModel.from_pretrained(model_merge, "models/lora_adapter_B")
 # model_merge2.merge_and_unload()
 
 
 # model = model_merge2;
-model = model_base;
+model = model_merge;
+#model = model_base;
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 model.eval()  # set to evaluation mode
 
 # Example prompt
-prompt = 'User: Fuck you\nAI:'
+prompt = 'User: Hello\nAI:'
 
 # Encode the prompt
 input_ids = tokenizer.encode(prompt, return_tensors="pt").to(device)
@@ -36,9 +41,9 @@ attention_mask = torch.ones_like(input_ids)
 output_ids = model.generate(
     input_ids,
     attention_mask=attention_mask,
-    max_length=500,
+    max_length=300,
     do_sample=True,
-    temperature=0.7,
+    temperature=0.8,
     top_k=50,
     top_p=0.95,
     pad_token_id=tokenizer.eos_token_id,
