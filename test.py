@@ -13,18 +13,18 @@ import os
 
 tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
 model_base = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
-model_merge = PeftModel.from_pretrained(model_base, "models/gpt2_hater")
-print(model_merge.print_trainable_parameters())
-model_merge.merge_and_unload()
-print(model_merge.print_trainable_parameters())
+model = PeftModel.from_pretrained(model_base, "models/gpt2_lora_adapter")
+print(model.print_trainable_parameters())
+#model.merge_and_unload()
+print(model.print_trainable_parameters())
 
 # model_merge2 = PeftModel.from_pretrained(model_merge, "models/lora_adapter_B")
 # model_merge2.merge_and_unload()
 
 
 # model = model_merge2;
-model = model_merge;
-#model = model_base;
+# model = model_merge;
+# model = model_base;
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)

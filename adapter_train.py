@@ -1,24 +1,25 @@
 import json
 import torch
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, Dataset, TensorDataset
 from transformers import GPT2Tokenizer, GPT2LMHeadModel
 from peft import LoraConfig, get_peft_model, TaskType
+import torch.nn as nn
 
 # -----------------------------
 # Load tokenizer & base model
 # -----------------------------
-model_name = "models/gpt2_local"
-tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-tokenizer.pad_token = tokenizer.eos_token  # GPT2 nie ma pad_token
-base_model = GPT2LMHeadModel.from_pretrained(model_name)
+tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
+tokenizer.pad_token = tokenizer.eos_token
+
+base_model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
 
 # -----------------------------
-# Apply LoRA
+# Apply REAL LoRA (correct)
 # -----------------------------
 lora_config = LoraConfig(
     r=8,
     lora_alpha=16,
-    target_modules=["c_attn"],
+    target_modules=["c_attn"],  # GPT-2 attention projection layers
     lora_dropout=0.1,
     bias="none",
     task_type=TaskType.CAUSAL_LM
@@ -26,74 +27,67 @@ lora_config = LoraConfig(
 
 model = get_peft_model(base_model, lora_config)
 
+# IMPORTANT: Verify LoRA is the *only* trainable params
+model.print_trainable_parameters()   # MUST show ~0.2% trainable
+
 # -----------------------------
-# Load and tokenize data
+# Load & prep dataset
 # -----------------------------
 texts = []
-with open("data/twitch_data.jsonl", encoding="utf-8") as f:
+with open("data/HateSpeech.jsonl", encoding="utf-8") as f:
     for line in f:
         data = json.loads(line)
         texts.append(data["text"])
 
 full_text = "\n".join(texts)
-encoded_data = tokenizer.encode(full_text, add_special_tokens=False)
-encoded_data = torch.tensor(encoded_data, dtype=torch.long)
+encoded = tokenizer.encode(full_text, add_special_tokens=False)
 
-# Split train/test
-total_length = len(encoded_data)
-train_data = encoded_data[:int(total_length * 0.8)]
-test_data = encoded_data[int(total_length * 0.8):]
+total_length = len(encoded)
+train_data = torch.tensor(encoded[:int(total_length * 0.8)], dtype=torch.long)
+test_data = torch.tensor(encoded[int(total_length * 0.8):], dtype=torch.long)
 
-# Create blocks
 block_size = 128
-def create_blocks(data, block_size):
-    num_blocks = len(data) // block_size
-    data = data[:num_blocks * block_size]
-    return data.view(num_blocks, block_size)
+def create_blocks(data, block):
+    n = len(data) // block
+    data = data[:n * block]
+    return data.view(n, block)
 
 train_data = create_blocks(train_data, block_size)
 test_data = create_blocks(test_data, block_size)
 
-# Dataloaders
-batch_size = 4
-train_loader = DataLoader(TensorDataset(train_data, train_data), batch_size=batch_size, shuffle=True)
-test_loader = DataLoader(TensorDataset(test_data, test_data), batch_size=batch_size)
+train_dataset = TensorDataset(train_data, train_data)
+test_dataset = TensorDataset(test_data, test_data)
+
+train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=4)
 
 # -----------------------------
-# Training
+# Training LoRA ONLY
 # -----------------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
-optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5)
 model.train()
 
-epochs = 4
+optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)
+
+epochs = 3
 for epoch in range(epochs):
     for batch in train_loader:
-        inputs, labels = [x.to(device) for x in batch]
+        inputs, labels = [b.to(device) for b in batch]
+
         outputs = model(input_ids=inputs, labels=labels)
         loss = outputs.loss
+
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-    print(f"Epoch: {epoch}, Loss: {loss.item()}")
+
+    print(f"Epoch {epoch} | Loss: {loss.item()}")
 
 # -----------------------------
-# Save ONLY LoRA adapter
+# SAVE ONLY THE LORA ADAPTER
 # -----------------------------
-model.save_pretrained("models/gpt2_lora_adapter")  # <- tylko adapter
-tokenizer.save_pretrained("models/gpt2_lora_adapter")  # tokenizer potrzebny do użycia adaptera
+model.save_pretrained("models/gpt2_lora_adapter")
+tokenizer.save_pretrained("models/gpt2_lora_adapter")
 
-# -----------------------------
-# Evaluation
-# -----------------------------
-model.eval()
-total_loss = 0
-with torch.no_grad():
-    for batch in test_loader:
-        inputs, labels = [x.to(device) for x in batch]
-        outputs = model(input_ids=inputs, labels=labels)
-        total_loss += outputs.loss.item()
-
-avg_loss = total_loss / len(test_loader)
-print(f"Test loss: {avg_loss}")
+print("\nSaved REAL LoRA adapter in: models/gpt2_lora_adapter")
