@@ -11,12 +11,12 @@ import os
 # tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
 # model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
 
-tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
-model_base = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
-model = PeftModel.from_pretrained(model_base, "models/gpt2_lora_adapter")
-print(model.print_trainable_parameters())
+tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_twitch")
+model = GPT2LMHeadModel.from_pretrained("models/gpt2_twitch")
+#model = PeftModel.from_pretrained(model_base, "models/gpt2_convoHlora")
+#print(model.print_trainable_parameters())
 #model.merge_and_unload()
-print(model.print_trainable_parameters())
+#print(model.print_trainable_parameters())
 
 # model_merge2 = PeftModel.from_pretrained(model_merge, "models/lora_adapter_B")
 # model_merge2.merge_and_unload()
@@ -31,7 +31,7 @@ model.to(device)
 model.eval()  # set to evaluation mode
 
 # Example prompt
-prompt = 'User: Hello\nAI:'
+prompt = 'Tes'
 
 # Encode the prompt
 input_ids = tokenizer.encode(prompt, return_tensors="pt").to(device)

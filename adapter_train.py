@@ -8,10 +8,10 @@ import torch.nn as nn
 # -----------------------------
 # Load tokenizer & base model
 # -----------------------------
-tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
+tokenizer = GPT2Tokenizer.from_pretrained("test_models/gpt2_convo6Ep")
 tokenizer.pad_token = tokenizer.eos_token
 
-base_model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
+base_model = GPT2LMHeadModel.from_pretrained("test_models/gpt2_convo6Ep")
 
 # -----------------------------
 # Apply REAL LoRA (correct)
@@ -87,7 +87,7 @@ for epoch in range(epochs):
 # -----------------------------
 # SAVE ONLY THE LORA ADAPTER
 # -----------------------------
-model.save_pretrained("models/gpt2_lora_adapter")
-tokenizer.save_pretrained("models/gpt2_lora_adapter")
+model.save_pretrained("models/gpt2_convoHlora")
+tokenizer.save_pretrained("models/gpt2_convoHlora")
 
-print("\nSaved REAL LoRA adapter in: models/gpt2_lora_adapter")
+

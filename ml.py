@@ -15,7 +15,7 @@ def collate_fn(batch):
     labels = pad_sequence(labels, batch_first=True, padding_value=-100)
     return input_ids, labels
 
-# --- Load base GPT-2 ---
+
 tokenizer = GPT2Tokenizer.from_pretrained("models/gpt2_local")
 model = GPT2LMHeadModel.from_pretrained("models/gpt2_local")
 tokenizer.pad_token = tokenizer.eos_token
@@ -23,7 +23,7 @@ tokenizer.pad_token = tokenizer.eos_token
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
-# --- Prepare data ---
+
 class ConversationDataset(Dataset):
     def __init__(self, path, tokenizer, block_size=128):
         self.samples = []
@@ -60,15 +60,12 @@ class ConversationDataset(Dataset):
     def __getitem__(self, idx):
         return self.samples[idx]["input_ids"], self.samples[idx]["labels"]
 
-# --- Create dataset and loader ---
 dataset = ConversationDataset("data/Conversation.jsonl", tokenizer, block_size=128)
 # train_loader = DataLoader(dataset, batch_size=2, shuffle=True)
 train_loader = DataLoader(dataset, batch_size=2, shuffle=True, collate_fn=collate_fn)
 
-# --- Optimizer ---
 optimizer = AdamW(model.parameters(), lr=3e-5, weight_decay=0.01)
 
-# --- Training ---
 model.train()
 epochs = 6
 
