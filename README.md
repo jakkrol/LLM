@@ -32,8 +32,3 @@ Injecting trainable rank decomposition matrices into the transformer layers whil
 * **Benefit:** Drastically reduces the number of trainable parameters.
 * **Efficiency:** Lower memory footprint, making it possible to train on consumer GPUs.
 
-
-
-1. **Install Dependencies:**
-   ```bash
-   pip install torch transformers peft datasets
